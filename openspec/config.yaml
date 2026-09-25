@@ -25,7 +25,7 @@ context: |
 
   # Deployment
   - Google Cloud Run (serverless, scale-to-zero)
-  - CI/CD via GitHub Actions calling reusable workflows from github-meta
+  - CI/CD via GitHub Actions calling reusable workflows from project-standards
   - Secure credential management via environment variables
 
   # Database Migrations
