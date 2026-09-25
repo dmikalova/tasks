@@ -4,5 +4,7 @@
   "runtime": {
     "port": 8000,
     "healthCheckPath": "/health"
-  }
+  },
+  "$schema": "https://raw.githubusercontent.com/dmikalova/project-standards/main/schema/mklv.config.schema.json",
+  "kind": "cloudrun"
 }
