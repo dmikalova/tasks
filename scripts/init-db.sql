@@ -1,5 +1,5 @@
 -- Initialize database for local development
--- Creates the tasks schema that Atlas will manage
+-- Creates the tasks schema that Ptah will manage
 -- Creates a non-superuser app role for RLS enforcement
 
 CREATE SCHEMA IF NOT EXISTS tasks;

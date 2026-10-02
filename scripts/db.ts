@@ -1,6 +1,6 @@
 #!/usr/bin/env -S deno run --allow-run --allow-env
 /**
- * Atlas database schema management wrapper
+ * Ptah Compat database schema management wrapper
  *
  * Automatically fetches DATABASE_URL_SESSION from Google Secret Manager,
  * or uses the environment variable if set.
@@ -72,7 +72,7 @@ async function getDatabaseUrl(): Promise<string> {
   return url;
 }
 
-async function runAtlas(
+async function runPtah(
   subcommand: string,
   databaseUrl: string,
 ): Promise<void> {
@@ -81,23 +81,33 @@ async function runAtlas(
 
   const args = [
     "schema",
-    subcommand,
+    "apply",
     "--to",
     `file://${schemaFile}`,
     "--url",
     databaseUrl,
     "--schema",
     SCHEMA_NAME,
+    "--var",
+    `app_role=${
+      Deno.env.get("DENO_ENV") === "production" ? "tasks-role" : "tasks_app"
+    }`,
   ];
 
-  // Add --auto-approve for apply
+  // Use the same plan for preview and apply.
   if (subcommand === "apply") {
     args.push("--auto-approve");
+  } else {
+    args.push("--dry-run");
   }
 
-  console.log(`Running: atlas schema ${subcommand}\n`);
+  console.log(
+    `Running: ptah-compat schema apply${
+      subcommand === "diff" ? " --dry-run" : ""
+    }\n`,
+  );
 
-  const command = new Deno.Command("atlas", {
+  const command = new Deno.Command("ptah-compat", {
     args,
     stdout: "inherit",
     stderr: "inherit",
@@ -108,41 +118,10 @@ async function runAtlas(
   if (code !== 0) {
     Deno.exit(code);
   }
-
-  // Apply RLS policies after schema apply (Atlas community edition does not manage RLS)
-  if (subcommand === "apply") {
-    await runRls(databaseUrl);
-  }
-}
-
-async function runRls(databaseUrl: string): Promise<void> {
-  console.log("\nApplying RLS policies...\n");
-
-  const repoRoot = new URL("../", import.meta.url).pathname;
-  const rlsFile = `${repoRoot}db/rls.sql`;
-
-  // Strip query parameters (e.g. search_path) that psql doesn't support as URI params.
-  // rls.sql uses fully-qualified table names so search_path is not needed.
-  const psqlUrl = databaseUrl.split("?")[0];
-
-  const command = new Deno.Command("psql", {
-    args: [psqlUrl, "-f", rlsFile],
-    stdout: "inherit",
-    stderr: "inherit",
-  });
-
-  const { code } = await command.output();
-
-  if (code !== 0) {
-    console.error("Failed to apply RLS policies");
-    Deno.exit(code);
-  }
-
-  console.log("RLS policies applied successfully.");
 }
 
 async function runTruncate(databaseUrl: string): Promise<void> {
-  console.log("Dropping all tables in schema (Atlas will recreate them)...\n");
+  console.log("Dropping all tables in schema (Ptah will recreate them)...\n");
 
   const sql = `
 DO $$
@@ -220,36 +199,36 @@ SELECT 'Seeded default work context' AS status;
   console.log("\nSeed data inserted successfully.");
 }
 
-// Main
-const subcommand = Deno.args[0];
+export async function main(args: string[] = Deno.args): Promise<void> {
+  const subcommand = args[0];
 
-if (
-  !subcommand ||
-  !["apply", "diff", "truncate", "seed", "rls"].includes(subcommand)
-) {
-  console.log("Usage: db.ts <apply|diff|truncate|seed|rls>");
-  console.log("");
-  console.log("Commands:");
-  console.log("  apply     Apply schema changes to the database");
-  console.log("  diff      Show planned schema changes without applying");
-  console.log(
-    "  truncate  Truncate all tables (use before destructive migrations)",
-  );
-  console.log("  seed      Insert default data (work context)");
-  console.log(
-    "  rls       Apply RLS policies (also runs automatically after apply)",
-  );
-  Deno.exit(1);
+  if (
+    !subcommand ||
+    !["apply", "diff", "truncate", "seed"].includes(subcommand)
+  ) {
+    console.log("Usage: db.ts <apply|diff|truncate|seed>");
+    console.log("");
+    console.log("Commands:");
+    console.log("  apply     Apply schema changes to the database");
+    console.log("  diff      Show planned schema changes without applying");
+    console.log(
+      "  truncate  Truncate all tables (use before destructive migrations)",
+    );
+    console.log("  seed      Insert default data (work context)");
+    Deno.exit(1);
+  }
+
+  const databaseUrl = await getDatabaseUrl();
+
+  if (subcommand === "truncate") {
+    await runTruncate(databaseUrl);
+  } else if (subcommand === "seed") {
+    await runSeed(databaseUrl);
+  } else {
+    await runPtah(subcommand, databaseUrl);
+  }
 }
 
-const databaseUrl = await getDatabaseUrl();
-
-if (subcommand === "truncate") {
-  await runTruncate(databaseUrl);
-} else if (subcommand === "seed") {
-  await runSeed(databaseUrl);
-} else if (subcommand === "rls") {
-  await runRls(databaseUrl);
-} else {
-  await runAtlas(subcommand, databaseUrl);
+if (import.meta.main) {
+  await main();
 }
