@@ -30,6 +30,11 @@ its existing `tasks-role`; setting `DENO_ENV=production` selects that role for
 permissions. The schema does not create or change role credentials. For direct
 CLI use against production, pass `--var app_role=tasks-role`.
 
+The production CI/CD workflow applies the schema directly. `mklv.config.json`
+selects Ptah through `database.tool` and supplies `database.vars.app_role` as
+`tasks-role`. The shared `project-standards` workflow installs the pinned release,
+previews the plan, and retains its destructive-change guard before apply.
+
 The former `db/rls.sql` policies are now HCL declarations with the same names,
 conditions, commands, and ENABLE/FORCE settings. Table and schema grants are
 also declarative. The schema has no sequences, so the old grant on all existing

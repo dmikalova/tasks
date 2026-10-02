@@ -6,5 +6,11 @@
     "healthCheckPath": "/health"
   },
   "$schema": "https://raw.githubusercontent.com/dmikalova/project-standards/main/schema/mklv.config.schema.json",
-  "kind": "cloudrun"
+  "kind": "cloudrun",
+  "database": {
+    "tool": "ptah",
+    "vars": {
+      "app_role": "tasks-role"
+    }
+  }
 }
