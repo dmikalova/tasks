@@ -1,5 +1,5 @@
 # Database schema for tasks
-# Managed by Atlas CLI - https://atlasgo.io
+# Managed by Ptah Compat - https://ptah.run
 
 schema "tasks" {}
 
@@ -35,6 +35,11 @@ enum "task_action" {
 
 table "projects" {
   schema = schema.tasks
+
+  row_security {
+    enabled  = true
+    enforced = true
+  }
 
   column "id" {
     type    = uuid
@@ -107,6 +112,11 @@ table "projects" {
 table "contexts" {
   schema = schema.tasks
 
+  row_security {
+    enabled  = true
+    enforced = true
+  }
+
   column "id" {
     type    = uuid
     null    = false
@@ -152,6 +162,11 @@ table "contexts" {
 
 table "context_time_windows" {
   schema = schema.tasks
+
+  row_security {
+    enabled  = true
+    enforced = true
+  }
 
   column "id" {
     type    = uuid
@@ -206,6 +221,11 @@ table "context_time_windows" {
 
 table "tasks" {
   schema = schema.tasks
+
+  row_security {
+    enabled  = true
+    enforced = true
+  }
 
   column "id" {
     type    = uuid
@@ -310,6 +330,11 @@ table "tasks" {
 
 table "recurrence_rules" {
   schema = schema.tasks
+
+  row_security {
+    enabled  = true
+    enforced = true
+  }
 
   column "id" {
     type    = uuid
@@ -422,6 +447,11 @@ table "recurrence_rules" {
 table "saved_filters" {
   schema = schema.tasks
 
+  row_security {
+    enabled  = true
+    enforced = true
+  }
+
   column "id" {
     type    = uuid
     null    = false
@@ -467,6 +497,11 @@ table "saved_filters" {
 
 table "task_history" {
   schema = schema.tasks
+
+  row_security {
+    enabled  = true
+    enforced = true
+  }
 
   column "id" {
     type    = uuid
@@ -629,6 +664,11 @@ table "user_next_selection" {
 table "user_settings" {
   schema = schema.tasks
 
+  row_security {
+    enabled  = true
+    enforced = true
+  }
+
   column "user_id" {
     type = uuid
     null = false
@@ -649,4 +689,285 @@ table "user_settings" {
   primary_key {
     columns = [column.user_id]
   }
+}
+
+# Row-level security
+# Set app.user_id in each transaction before accessing application data.
+
+policy "projects_user_select" {
+  on    = table.projects
+  for   = SELECT
+  using = "user_id = current_setting('app.user_id')::uuid"
+}
+
+policy "projects_user_insert" {
+  on    = table.projects
+  for   = INSERT
+  check = "user_id = current_setting('app.user_id')::uuid"
+}
+
+policy "projects_user_update" {
+  on    = table.projects
+  for   = UPDATE
+  using = "user_id = current_setting('app.user_id')::uuid"
+  check = "user_id = current_setting('app.user_id')::uuid"
+}
+
+policy "projects_user_delete" {
+  on    = table.projects
+  for   = DELETE
+  using = "user_id = current_setting('app.user_id')::uuid"
+}
+
+policy "contexts_user_select" {
+  on    = table.contexts
+  for   = SELECT
+  using = "user_id = current_setting('app.user_id')::uuid"
+}
+
+policy "contexts_user_insert" {
+  on    = table.contexts
+  for   = INSERT
+  check = "user_id = current_setting('app.user_id')::uuid"
+}
+
+policy "contexts_user_update" {
+  on    = table.contexts
+  for   = UPDATE
+  using = "user_id = current_setting('app.user_id')::uuid"
+  check = "user_id = current_setting('app.user_id')::uuid"
+}
+
+policy "contexts_user_delete" {
+  on    = table.contexts
+  for   = DELETE
+  using = "user_id = current_setting('app.user_id')::uuid"
+}
+
+policy "ctw_user_select" {
+  on    = table.context_time_windows
+  for   = SELECT
+  using = "EXISTS (SELECT 1 FROM tasks.contexts WHERE id = context_id AND user_id = current_setting('app.user_id')::uuid)"
+}
+
+policy "ctw_user_insert" {
+  on    = table.context_time_windows
+  for   = INSERT
+  check = "EXISTS (SELECT 1 FROM tasks.contexts WHERE id = context_id AND user_id = current_setting('app.user_id')::uuid)"
+}
+
+policy "ctw_user_update" {
+  on    = table.context_time_windows
+  for   = UPDATE
+  using = "EXISTS (SELECT 1 FROM tasks.contexts WHERE id = context_id AND user_id = current_setting('app.user_id')::uuid)"
+  check = "EXISTS (SELECT 1 FROM tasks.contexts WHERE id = context_id AND user_id = current_setting('app.user_id')::uuid)"
+}
+
+policy "ctw_user_delete" {
+  on    = table.context_time_windows
+  for   = DELETE
+  using = "EXISTS (SELECT 1 FROM tasks.contexts WHERE id = context_id AND user_id = current_setting('app.user_id')::uuid)"
+}
+
+policy "tasks_user_select" {
+  on    = table.tasks
+  for   = SELECT
+  using = "user_id = current_setting('app.user_id')::uuid"
+}
+
+policy "tasks_user_insert" {
+  on    = table.tasks
+  for   = INSERT
+  check = "user_id = current_setting('app.user_id')::uuid"
+}
+
+policy "tasks_user_update" {
+  on    = table.tasks
+  for   = UPDATE
+  using = "user_id = current_setting('app.user_id')::uuid"
+  check = "user_id = current_setting('app.user_id')::uuid"
+}
+
+policy "tasks_user_delete" {
+  on    = table.tasks
+  for   = DELETE
+  using = "user_id = current_setting('app.user_id')::uuid"
+}
+
+policy "recurrence_user_select" {
+  on    = table.recurrence_rules
+  for   = SELECT
+  using = "EXISTS (SELECT 1 FROM tasks.tasks WHERE id = task_id AND user_id = current_setting('app.user_id')::uuid)"
+}
+
+policy "recurrence_user_insert" {
+  on    = table.recurrence_rules
+  for   = INSERT
+  check = "EXISTS (SELECT 1 FROM tasks.tasks WHERE id = task_id AND user_id = current_setting('app.user_id')::uuid)"
+}
+
+policy "recurrence_user_update" {
+  on    = table.recurrence_rules
+  for   = UPDATE
+  using = "EXISTS (SELECT 1 FROM tasks.tasks WHERE id = task_id AND user_id = current_setting('app.user_id')::uuid)"
+  check = "EXISTS (SELECT 1 FROM tasks.tasks WHERE id = task_id AND user_id = current_setting('app.user_id')::uuid)"
+}
+
+policy "recurrence_user_delete" {
+  on    = table.recurrence_rules
+  for   = DELETE
+  using = "EXISTS (SELECT 1 FROM tasks.tasks WHERE id = task_id AND user_id = current_setting('app.user_id')::uuid)"
+}
+
+policy "saved_filters_user_select" {
+  on    = table.saved_filters
+  for   = SELECT
+  using = "user_id = current_setting('app.user_id')::uuid"
+}
+
+policy "saved_filters_user_insert" {
+  on    = table.saved_filters
+  for   = INSERT
+  check = "user_id = current_setting('app.user_id')::uuid"
+}
+
+policy "saved_filters_user_update" {
+  on    = table.saved_filters
+  for   = UPDATE
+  using = "user_id = current_setting('app.user_id')::uuid"
+  check = "user_id = current_setting('app.user_id')::uuid"
+}
+
+policy "saved_filters_user_delete" {
+  on    = table.saved_filters
+  for   = DELETE
+  using = "user_id = current_setting('app.user_id')::uuid"
+}
+
+policy "task_history_user_select" {
+  on    = table.task_history
+  for   = SELECT
+  using = "user_id = current_setting('app.user_id')::uuid"
+}
+
+policy "task_history_user_insert" {
+  on    = table.task_history
+  for   = INSERT
+  check = "user_id = current_setting('app.user_id')::uuid"
+}
+
+policy "task_history_user_update" {
+  on    = table.task_history
+  for   = UPDATE
+  using = "user_id = current_setting('app.user_id')::uuid"
+  check = "user_id = current_setting('app.user_id')::uuid"
+}
+
+policy "task_history_user_delete" {
+  on    = table.task_history
+  for   = DELETE
+  using = "user_id = current_setting('app.user_id')::uuid"
+}
+
+policy "user_settings_user_select" {
+  on    = table.user_settings
+  for   = SELECT
+  using = "user_id = current_setting('app.user_id')::uuid"
+}
+
+policy "user_settings_user_insert" {
+  on    = table.user_settings
+  for   = INSERT
+  check = "user_id = current_setting('app.user_id')::uuid"
+}
+
+policy "user_settings_user_update" {
+  on    = table.user_settings
+  for   = UPDATE
+  using = "user_id = current_setting('app.user_id')::uuid"
+  check = "user_id = current_setting('app.user_id')::uuid"
+}
+
+policy "user_settings_user_delete" {
+  on    = table.user_settings
+  for   = DELETE
+  using = "user_id = current_setting('app.user_id')::uuid"
+}
+
+# The database bootstrap owns role creation; this schema manages its access.
+variable "app_role" {
+  type    = string
+  default = "tasks_app"
+}
+
+permission {
+  to         = var.app_role
+  for        = schema.tasks
+  privileges = [USAGE]
+}
+
+permission {
+  to         = var.app_role
+  for        = table.projects
+  privileges = [SELECT, INSERT, UPDATE, DELETE]
+}
+
+permission {
+  to         = var.app_role
+  for        = table.contexts
+  privileges = [SELECT, INSERT, UPDATE, DELETE]
+}
+
+permission {
+  to         = var.app_role
+  for        = table.context_time_windows
+  privileges = [SELECT, INSERT, UPDATE, DELETE]
+}
+
+permission {
+  to         = var.app_role
+  for        = table.tasks
+  privileges = [SELECT, INSERT, UPDATE, DELETE]
+}
+
+permission {
+  to         = var.app_role
+  for        = table.recurrence_rules
+  privileges = [SELECT, INSERT, UPDATE, DELETE]
+}
+
+permission {
+  to         = var.app_role
+  for        = table.saved_filters
+  privileges = [SELECT, INSERT, UPDATE, DELETE]
+}
+
+permission {
+  to         = var.app_role
+  for        = table.task_history
+  privileges = [SELECT, INSERT, UPDATE, DELETE]
+}
+
+permission {
+  to         = var.app_role
+  for        = table.project_contexts
+  privileges = [SELECT, INSERT, UPDATE, DELETE]
+}
+
+permission {
+  to         = var.app_role
+  for        = table.task_contexts
+  privileges = [SELECT, INSERT, UPDATE, DELETE]
+}
+
+permission {
+  to         = var.app_role
+  for        = table.user_next_selection
+  privileges = [SELECT, INSERT, UPDATE, DELETE]
+}
+
+permission {
+  to         = var.app_role
+  for        = table.user_settings
+  privileges = [SELECT, INSERT, UPDATE, DELETE]
 }

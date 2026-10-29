@@ -22,7 +22,7 @@ Conventions specific to this Deno + Hono + Lit web application.
 
 - Unit tests: `tests/unit/` — no external dependencies
 - Integration tests: `tests/integration/` — requires PostgreSQL (via
-  `docker compose`)
+  `docker compose`) and `ptah-compat` on `PATH`
 - Coverage target: 100% line and function coverage
 - Run `deno task test:all --coverage` to verify coverage
 - Always check for coverage regressions in CI and maintain 100% coverage on new
@@ -32,7 +32,7 @@ Conventions specific to this Deno + Hono + Lit web application.
 ## Database
 
 - PostgreSQL with schema isolation (`tasks` schema)
-- Schema managed by Atlas CLI (`db/schema.hcl`)
+- Schema managed by Ptah Compat (`db/schema.hcl`)
 - Local dev uses Docker Compose (`compose.yaml`)
 - App connects as `tasks_app` (non-superuser) for RLS enforcement
 - Migrations applied via `scripts/db.ts`
